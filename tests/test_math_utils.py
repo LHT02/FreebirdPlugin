@@ -1,7 +1,12 @@
 import math
 import unittest
 
-from freebird_curve_editor.math_utils import falloff_weight, joystick_scale_factor, signed_twist_angle
+from freebird_curve_editor.math_utils import (
+    falloff_weight,
+    joystick_scale_factor,
+    safe_signed_twist_angle,
+    signed_twist_angle,
+)
 
 
 class SignedTwistAngleTests(unittest.TestCase):
@@ -19,6 +24,34 @@ class SignedTwistAngleTests(unittest.TestCase):
         angle = -math.pi / 3.0
         quaternion = (math.cos(angle / 2.0), 0.0, 0.0, math.sin(angle / 2.0))
         self.assertAlmostEqual(signed_twist_angle(quaternion, (0.0, 0.0, 1.0)), angle)
+
+    def test_equivalent_negative_quaternion_keeps_same_short_arc(self):
+        angle = math.pi / 6.0
+        quaternion = (math.cos(angle / 2.0), 0.0, math.sin(angle / 2.0), 0.0)
+        negative = tuple(-component for component in quaternion)
+        self.assertAlmostEqual(
+            signed_twist_angle(negative, (0.0, 1.0, 0.0)),
+            signed_twist_angle(quaternion, (0.0, 1.0, 0.0)),
+        )
+
+    def test_rejects_large_tracking_discontinuity(self):
+        angle = math.pi / 2.0
+        quaternion = (math.cos(angle / 2.0), 0.0, 0.0, math.sin(angle / 2.0))
+        self.assertEqual(
+            safe_signed_twist_angle(quaternion, (0.0, 0.0, 1.0), math.pi / 4.0),
+            0.0,
+        )
+
+    def test_accepts_normal_frame_rotation(self):
+        angle = math.pi / 18.0
+        quaternion = (math.cos(angle / 2.0), math.sin(angle / 2.0), 0.0, 0.0)
+        self.assertAlmostEqual(
+            safe_signed_twist_angle(quaternion, (1.0, 0.0, 0.0), math.pi / 4.0),
+            angle,
+        )
+
+    def test_invalid_quaternion_is_neutral(self):
+        self.assertEqual(signed_twist_angle((float("nan"), 0.0, 0.0, 0.0), (1.0, 0.0, 0.0)), 0.0)
 
 
 class JoystickScaleTests(unittest.TestCase):

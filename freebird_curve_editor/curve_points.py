@@ -114,6 +114,14 @@ def point_world_tangent(ob, target):
     return tangent
 
 
+def capture_point_tangents(ob, entries):
+    """Freeze world-space tangent axes for one transform session."""
+    return {
+        key: Vector(point_world_tangent(ob, point))
+        for key, (point, _) in entries.items()
+    }
+
+
 def _world_positions(ob, points):
     return [ob.matrix_world @ point_position(point) for point in points]
 

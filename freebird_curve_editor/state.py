@@ -8,11 +8,13 @@ class RuntimeState:
     draw_radius: float = 1.0
     falloff_entries: dict = field(default_factory=dict)
     falloff_session: tuple = None
+    twist_axes: dict = field(default_factory=dict)
     joystick_timestamps: dict = field(default_factory=dict)
 
     def reset_transform(self):
         self.falloff_entries.clear()
         self.falloff_session = None
+        self.twist_axes.clear()
         self.joystick_timestamps.clear()
 
     def reset(self):

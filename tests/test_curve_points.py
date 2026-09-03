@@ -59,6 +59,7 @@ sys.modules.setdefault("mathutils", fake_mathutils)
 
 from freebird_curve_editor.curve_points import (  # noqa: E402
     build_falloff_entries,
+    capture_point_tangents,
     iter_curve_points,
     point_key,
     point_world_tangent,
@@ -134,6 +135,19 @@ class CurvePointTests(unittest.TestCase):
         expected_length = math.sqrt(5.0)
         self.assertAlmostEqual(tangent.x, 2.0 / expected_length)
         self.assertAlmostEqual(tangent.y, 1.0 / expected_length)
+
+    def test_captured_tangent_does_not_flip_when_endpoint_crosses_neighbor(self):
+        endpoint = Point(0, 0, 0)
+        neighbor = Point(1, 0, 0)
+        ob = CurveObject([Spline([endpoint, neighbor])])
+        key = point_key(endpoint)
+
+        captured = capture_point_tangents(ob, {key: (endpoint, 1.0)})
+        endpoint.co[:3] = [2.0, 0.0, 0.0]
+        live = point_world_tangent(ob, endpoint)
+
+        self.assertAlmostEqual(captured[key].x, 1.0)
+        self.assertAlmostEqual(live.x, -1.0)
 
 
 if __name__ == "__main__":

@@ -4,12 +4,13 @@ from time import monotonic
 from ..constants import (
     JOYSTICK_DEADZONE,
     JOYSTICK_RADIUS_RATE,
+    MAX_CONTROLLER_ROTATION_DELTA,
     MAX_TILT,
     POINT_RADIUS_MAX,
     POINT_RADIUS_MIN,
 )
-from ..curve_points import build_falloff_entries, point_key, point_world_tangent, set_point_position
-from ..math_utils import clamp, joystick_scale_factor, signed_twist_angle
+from ..curve_points import build_falloff_entries, capture_point_tangents, point_key, set_point_position
+from ..math_utils import clamp, joystick_scale_factor, safe_signed_twist_angle
 from ..state import runtime
 
 
@@ -57,18 +58,19 @@ def _prepare_entries(ob, transform_elements):
     tool_settings = bpy.context.scene.tool_settings
     if not tool_settings.use_proportional_edit:
         runtime.falloff_entries = {point_key(point): (point, 1.0) for point in selected}
-        return
+    else:
+        size_name = "proportional_distance" if hasattr(tool_settings, "proportional_distance") else "proportional_size"
+        radius = getattr(tool_settings, size_name)
+        connected = bool(getattr(tool_settings, "use_proportional_connected", True))
+        runtime.falloff_entries = build_falloff_entries(
+            ob,
+            selected,
+            radius,
+            tool_settings.proportional_edit_falloff,
+            connected=connected,
+        )
 
-    size_name = "proportional_distance" if hasattr(tool_settings, "proportional_distance") else "proportional_size"
-    radius = getattr(tool_settings, size_name)
-    connected = bool(getattr(tool_settings, "use_proportional_connected", True))
-    runtime.falloff_entries = build_falloff_entries(
-        ob,
-        selected,
-        radius,
-        tool_settings.proportional_edit_falloff,
-        connected=connected,
-    )
+    runtime.twist_axes = capture_point_tangents(ob, runtime.falloff_entries)
 
 
 def _weighted_pose(pose_delta, weight):
@@ -111,8 +113,8 @@ def install(registry):
         scale = _scale_component(pose_delta.scale_factor)
         single_hand = "both" not in (event.button_name or "")
 
-        for point, weight in runtime.falloff_entries.values():
-            tangent = point_world_tangent(ob, point)
+        for key, (point, weight) in runtime.falloff_entries.items():
+            tangent = runtime.twist_axes.get(key, Vector())
             position = point.co[:3]
             pose = Pose(transform_state["transform_m"] @ Vector(position), Quaternion(), 1.0)
             pose.transform(_weighted_pose(pose_delta, weight), event.pivot_position)
@@ -128,9 +130,10 @@ def install(registry):
                 and transform_state.get("is_transforming_from_grab")
                 and tangent.length_squared > 1.0e-12
             ):
-                angle = signed_twist_angle(
+                angle = safe_signed_twist_angle(
                     (pose_delta.rotation.w, pose_delta.rotation.x, pose_delta.rotation.y, pose_delta.rotation.z),
                     (tangent.x, tangent.y, tangent.z),
+                    MAX_CONTROLLER_ROTATION_DELTA,
                 )
                 point.tilt = clamp(point.tilt + angle * weight, -MAX_TILT, MAX_TILT)
 

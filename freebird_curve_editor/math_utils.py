@@ -1,12 +1,30 @@
-from math import atan2, exp, sqrt
+from math import atan2, exp, isfinite, sqrt
 
 
 def clamp(value, minimum, maximum):
     return max(minimum, min(maximum, value))
 
 
-def signed_twist_angle(quaternion_wxyz, axis_xyz):
-    """Return the signed quaternion twist around a normalized axis."""
+def _canonical_quaternion(quaternion_wxyz):
+    values = tuple(float(component) for component in quaternion_wxyz)
+    if len(values) != 4 or not all(isfinite(component) for component in values):
+        return None
+
+    length = sqrt(sum(component * component for component in values))
+    if length <= 1.0e-8:
+        return None
+
+    values = tuple(component / length for component in values)
+    for component in values:
+        if abs(component) <= 1.0e-8:
+            continue
+        if component < 0.0:
+            values = tuple(-value for value in values)
+        break
+    return values
+
+
+def _signed_twist_angle(quaternion_wxyz, axis_xyz):
     w, x, y, z = quaternion_wxyz
     ax, ay, az = axis_xyz
     axis_length = sqrt(ax * ax + ay * ay + az * az)
@@ -22,6 +40,27 @@ def signed_twist_angle(quaternion_wxyz, axis_xyz):
         return 0.0
 
     return 2.0 * atan2(projected / projected_length, w / projected_length)
+
+
+def signed_twist_angle(quaternion_wxyz, axis_xyz):
+    """Return shortest-arc quaternion twist, invariant to q/-q representation."""
+    quaternion = _canonical_quaternion(quaternion_wxyz)
+    if quaternion is None:
+        return 0.0
+    return _signed_twist_angle(quaternion, axis_xyz)
+
+
+def safe_signed_twist_angle(quaternion_wxyz, axis_xyz, max_rotation_delta):
+    """Return twist unless the whole frame delta looks like a tracking discontinuity."""
+    quaternion = _canonical_quaternion(quaternion_wxyz)
+    if quaternion is None:
+        return 0.0
+
+    w, x, y, z = quaternion
+    rotation_angle = 2.0 * atan2(sqrt(x * x + y * y + z * z), w)
+    if max_rotation_delta > 0.0 and rotation_angle > max_rotation_delta:
+        return 0.0
+    return _signed_twist_angle(quaternion, axis_xyz)
 
 
 def joystick_scale_factor(value, delta_seconds, rate, deadzone):

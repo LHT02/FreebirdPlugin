@@ -1,4 +1,5 @@
 from .constants import DRAW_RADIUS_MAX, DRAW_RADIUS_MIN, DRAW_RADIUS_STEP, PLUGIN_ID
+from .icon_paths import launcher_icon
 from .math_utils import clamp
 from .state import runtime
 
@@ -101,17 +102,18 @@ def refresh_buttons():
     import bpy
     from freebird.api import add_launcher_button
 
-    falloff = "ON" if bpy.context.scene.tool_settings.use_proportional_edit else "OFF"
+    falloff_enabled = bpy.context.scene.tool_settings.use_proportional_edit
+    falloff = "ON" if falloff_enabled else "OFF"
     entries = (
-        ("draw", "DRAW IN", activate_draw_mode),
-        ("edit", "EDIT", activate_edit_mode),
-        ("falloff", f"FALLOFF {falloff}", toggle_falloff),
-        ("radius_down", "RADIUS -", decrease_draw_radius),
-        ("radius_value", f"R {runtime.draw_radius:.2f}x", report_draw_radius),
-        ("radius_up", "RADIUS +", increase_draw_radius),
+        ("draw", "DRAW IN", activate_draw_mode, launcher_icon("draw")),
+        ("edit", "EDIT", activate_edit_mode, launcher_icon("edit")),
+        ("falloff", f"FALLOFF {falloff}", toggle_falloff, launcher_icon("falloff", falloff_enabled)),
+        ("radius_down", "RADIUS -", decrease_draw_radius, launcher_icon("radius_down")),
+        ("radius_value", f"R {runtime.draw_radius:.2f}x", report_draw_radius, launcher_icon("radius_value")),
+        ("radius_up", "RADIUS +", increase_draw_radius, launcher_icon("radius_up")),
     )
-    for button_id, label, callback in entries:
-        add_launcher_button(PLUGIN_ID, button_id, label, callback)
+    for button_id, label, callback, icon in entries:
+        add_launcher_button(PLUGIN_ID, button_id, label, callback, icon=icon)
 
 
 def unregister_buttons():
