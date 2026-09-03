@@ -1,9 +1,9 @@
-from .constants import DRAW_RADIUS_MAX, DRAW_RADIUS_MIN, DRAW_RADIUS_STEP, PLUGIN_ID
+from .constants import ADD_POINT_TOOL, DRAW_RADIUS_MAX, DRAW_RADIUS_MIN, DRAW_RADIUS_STEP, PLUGIN_ID
 from .icon_paths import launcher_icon
 from .math_utils import clamp
 from .state import runtime
 
-_BUTTON_IDS = ("draw", "edit", "falloff", "radius_down", "radius_value", "radius_up")
+_BUTTON_IDS = ("draw", "edit", "add_point", "falloff", "radius_down", "radius_value", "radius_up")
 
 
 def _log():
@@ -71,6 +71,26 @@ def activate_edit_mode():
     _log().info(f"Curve Editor: editing {target.name}")
 
 
+def activate_add_point_mode():
+    import bpy
+    from freebird.utils import set_mode, set_tool
+
+    target = _active_or_target_curve()
+    if target is None:
+        _log().warning("Curve Editor: select a Curve object before entering ADD POINT mode")
+        return
+
+    runtime.draw_into_active_curve = False
+    if bpy.context.view_layer.objects.active is not target:
+        bpy.context.view_layer.objects.active = target
+    target.select_set(True)
+    set_tool("select")
+    if target.mode != "EDIT" and not set_mode("EDIT"):
+        return
+    set_tool(ADD_POINT_TOOL)
+    _log().info(f"Curve Editor: drag across control-point segments to add points to {target.name}")
+
+
 def toggle_falloff():
     import bpy
 
@@ -107,6 +127,7 @@ def refresh_buttons():
     entries = (
         ("draw", "DRAW IN", activate_draw_mode, launcher_icon("draw")),
         ("edit", "EDIT", activate_edit_mode, launcher_icon("edit")),
+        ("add_point", "ADD POINT", activate_add_point_mode, launcher_icon("add_point")),
         ("falloff", f"FALLOFF {falloff}", toggle_falloff, launcher_icon("falloff", falloff_enabled)),
         ("radius_down", "RADIUS -", decrease_draw_radius, launcher_icon("radius_down")),
         ("radius_value", f"R {runtime.draw_radius:.2f}x", report_draw_radius, launcher_icon("radius_value")),

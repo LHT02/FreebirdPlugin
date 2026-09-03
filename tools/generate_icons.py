@@ -76,6 +76,18 @@ def draw_falloff_icon(enabled):
     return image
 
 
+def draw_add_point_icon():
+    image = canvas()
+    draw = ImageDraw.Draw(image)
+    line(draw, ((16, 69), (112, 69)), width=8)
+    for x in (18, 110):
+        ellipse(draw, (x - 8, 61, x + 8, 77), width=5, fill=(0, 0, 0, 255))
+    ellipse(draw, (43, 43, 95, 95), outline=None, fill=(35, 35, 35, 255))
+    line(draw, ((52, 69), (86, 69)), width=8)
+    line(draw, ((69, 52), (69, 86)), width=8)
+    return image
+
+
 def draw_radius_icon(symbol=None):
     image = canvas()
     draw = ImageDraw.Draw(image)
@@ -92,6 +104,7 @@ def draw_radius_icon(symbol=None):
 def main():
     save(draw_curve_icon(False), "draw_in.png")
     save(draw_curve_icon(True), "edit_curve.png")
+    save(draw_add_point_icon(), "add_point.png")
     save(draw_falloff_icon(True), "falloff_on.png")
     save(draw_falloff_icon(False), "falloff_off.png")
     save(draw_radius_icon("minus"), "radius_down.png")

@@ -1,5 +1,5 @@
 from . import commands
-from .patches import drawing, interaction, multi_spline
+from .patches import add_point_tool, drawing, interaction, multi_spline
 from .patching import PatchRegistry
 from .state import runtime
 from .versioning import require_supported_freebird
@@ -18,6 +18,7 @@ def register_plugin():
     registry = PatchRegistry()
     try:
         multi_spline.install(registry)
+        add_point_tool.install(registry)
         drawing.install(registry)
         interaction.install(registry)
         commands.refresh_buttons()
@@ -37,6 +38,7 @@ def register_plugin():
 
 def unregister_plugin():
     global _registry
+    add_point_tool.deactivate()
     commands.unregister_buttons()
     if _registry is not None:
         _registry.restore()

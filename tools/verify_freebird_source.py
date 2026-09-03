@@ -19,7 +19,7 @@ REQUIRED_SYMBOLS = {
         "on_joystick_vertical",
         "on_transform_edit_curve",
     },
-    "freebird/tools/__init__.py": {"enable_tool"},
+    "freebird/tools/__init__.py": {"_get_modules", "disable_tool", "enable_tool"},
     "freebird/utils/selection_utils.py": {"set_select_state", "set_select_state_all"},
     "freebird/navigate.py": {"on_strafe_move", "on_yaw_move"},
     "bl_xr/events/bind_and_dispatch.py": {"remove_dead_subtargets"},

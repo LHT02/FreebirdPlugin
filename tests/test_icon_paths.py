@@ -10,6 +10,7 @@ class LauncherIconTests(unittest.TestCase):
         paths = [
             launcher_icon("draw"),
             launcher_icon("edit"),
+            launcher_icon("add_point"),
             launcher_icon("falloff", True),
             launcher_icon("falloff", False),
             launcher_icon("radius_down"),
@@ -23,7 +24,7 @@ class LauncherIconTests(unittest.TestCase):
             self.assertEqual(path.suffix.lower(), ".png")
 
     def test_icons_are_128_pixel_rgba_pngs(self):
-        for name in ("draw", "edit", "radius_down", "radius_value", "radius_up"):
+        for name in ("draw", "edit", "add_point", "radius_down", "radius_value", "radius_up"):
             data = Path(launcher_icon(name)).read_bytes()
             self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
             width, height, bit_depth, color_type = struct.unpack(">IIBB", data[16:26])
